@@ -25,6 +25,22 @@ class Report {
 
     return users.get(user) || 0;
   }
+
+  getDates() {
+    return Array.from(this.hours.keys()).sort();
+  }
+
+  getUsers() {
+    const result = new Set();
+
+    for (let users of this.hours.values()) {
+      for (let user of users.keys()) {
+        result.add(user);
+      }
+    }
+
+    return result;
+  }
 }
 
 const report = new Report()
@@ -43,13 +59,28 @@ fileReader.on('line', function(line) {
 
   const [name, date, hours] = line.split(",");
 
-  report.addHours(name, date, parseFloat(hours))
+  const formatedDate = new Date(date).toISOString().slice(0,10);
+
+  report.addHours(name, formatedDate, parseFloat(hours))
 });
 
 fileReader.on('close', function() {
-  const csvString = "";
+  let rows = []
+ 
+  const dates = report.getDates();
+  const headers = ['Name / Date', ...dates];
 
-  console.log(report)
+  rows.push(headers);
+
+  for (const user of report.getUsers()) {
+    const row = [user];
+    for (const date of dates) {
+      row.push(report.getHours(user, date))
+    }
+    rows.push(row)
+  }
+
+  const csvString = rows.map(row => row.join(',')).join('\n');
   
   fs.writeFile('out.csv', csvString, function (err) {
     if (err) return console.log(err);
